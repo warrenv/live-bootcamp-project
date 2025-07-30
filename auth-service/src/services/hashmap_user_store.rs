@@ -1,4 +1,5 @@
-use crate::domain::User;
+//use domain::User;
+use crate::domain::user::User;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
