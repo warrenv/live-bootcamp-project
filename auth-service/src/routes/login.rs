@@ -1,9 +1,11 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, Password, User},
+    utils::auth::generate_auth_cookie,
 };
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
@@ -19,28 +21,38 @@ pub enum LoginError {
 
 pub async fn login(
     State(state): State<AppState>,
+    jar: CookieJar,
     Json(request): Json<LoginRequest>,
-) -> Result<impl IntoResponse, AuthAPIError> {
-    let email =
-        Email::parse(request.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
-    let password =
-        Password::parse(request.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
+    let email = match Email::parse(request.email.clone()) {
+        Ok(x) => x,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
+
+    let password = match Password::parse(request.password.clone()) {
+        Ok(x) => x,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
 
     let user_store = &state.user_store.read().await;
 
-    // TODO: call `user_store.validate_user` and return
-    // `AuthAPIError::IncorrectCredentials` if valudation fails.
-    user_store
-        .validate_user(&email, &password)
-        .await
-        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+    if user_store.validate_user(&email, &password).await.is_err() {
+        return (jar.clone(), Err(AuthAPIError::IncorrectCredentials));
+    }
 
-    // TODO: call `user_store.get_user`. Return AuthAPIError::IncorrectCredentials if the operation fails.
-    //let user = todo!();
-    let user = user_store
-        .get_user(&email)
-        .await
-        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+    if user_store.get_user(&email).await.is_err() {
+        return (jar.clone(), Err(AuthAPIError::IncorrectCredentials));
+    }
 
-    Ok(StatusCode::OK.into_response())
+    // Call the generate_auth_cookie function defined in the auth module.
+    // If the function call fails return AuthAPIError::UnexpectedError.
+    let auth_cookie = match generate_auth_cookie(&email) {
+        Ok(x) => x,
+        Err(_) => return (jar.clone(), Err(AuthAPIError::UnexpectedError)),
+    };
+
+    let updated_jar = jar.clone().add(auth_cookie);
+
+    (updated_jar, Ok(StatusCode::OK.into_response()))
+    //    Ok(StatusCode::OK.into_response())
 }
