@@ -58,26 +58,38 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn login(&self) -> reqwest::Response {
-        #[derive(Debug, Serialize, Deserialize)]
-        struct Person {
-            first_name: String,
-            last_name: String,
-        }
-
-        let p = Person {
-            first_name: "Foo".into(),
-            last_name: "Bar".into(),
-        };
-
+    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
         self.http_client
             .post(&format!("{}/login", &self.address))
-            //    .header("Content-Type", "application/json")
-            //    .json(&p)
+            .json(body)
             .send()
             .await
             .expect("Failed to execute request.")
     }
+
+    //X    pub async fn login(&self) -> reqwest::Response {
+    //X        #[derive(Debug, Serialize, Deserialize)]
+    //X        struct Person {
+    //X            first_name: String,
+    //X            last_name: String,
+    //X        }
+    //X
+    //X        let p = Person {
+    //X            first_name: "Foo".into(),
+    //X            last_name: "Bar".into(),
+    //X        };
+    //X
+    //X        self.http_client
+    //X            .post(&format!("{}/login", &self.address))
+    //X            //    .header("Content-Type", "application/json")
+    //X            //    .json(&p)
+    //X            .send()
+    //X            .await
+    //X            .expect("Failed to execute request.")
+    //X    }
 
     pub async fn logout(&self) -> reqwest::Response {
         self.http_client
