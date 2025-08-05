@@ -58,12 +58,15 @@ fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
 pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
-    decode::<Claims>(
+    let x = decode::<Claims>(
         token,
         &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
         &Validation::default(),
     )
-    .map(|data| data.claims)
+    .map(|data| data.claims);
+
+    println!("validate_token: {:?}", x);
+    x
 }
 
 // Create JWT auth token by encoding claims using the JWT secret
