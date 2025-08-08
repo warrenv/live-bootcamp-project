@@ -1,10 +1,11 @@
 use crate::helpers::{get_random_email, TestApp};
 
-use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
+use auth_service::utils::constants::JWT_COOKIE_NAME;
 
 #[tokio::test]
 async fn should_return_200_valid_token() {
-    let app = TestApp::new().await;
+    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
 
     let random_email = get_random_email();
 
@@ -43,7 +44,7 @@ async fn should_return_200_valid_token() {
 
 #[tokio::test]
 async fn should_return_401_if_invalid_token() {
-    let app = TestApp::new().await;
+    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
 
     let valid_request = serde_json::json!({
       "token": "bogus".to_string()
@@ -56,7 +57,7 @@ async fn should_return_401_if_invalid_token() {
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
 
     let invalid_request = serde_json::json!({});
 

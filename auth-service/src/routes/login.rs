@@ -44,8 +44,6 @@ pub async fn login(
         return (jar.clone(), Err(AuthAPIError::IncorrectCredentials));
     }
 
-    // Call the generate_auth_cookie function defined in the auth module.
-    // If the function call fails return AuthAPIError::UnexpectedError.
     let auth_cookie = match generate_auth_cookie(&email) {
         Ok(x) => x,
         Err(_) => return (jar.clone(), Err(AuthAPIError::UnexpectedError)),
@@ -54,5 +52,4 @@ pub async fn login(
     let updated_jar = jar.clone().add(auth_cookie);
 
     (updated_jar, Ok(StatusCode::OK.into_response()))
-    //    Ok(StatusCode::OK.into_response())
 }

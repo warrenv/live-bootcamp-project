@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::helpers::{get_random_email, TestApp};
-use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
+use auth_service::utils::constants::JWT_COOKIE_NAME;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
+    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
 
     #[derive(Debug, Serialize, Deserialize)]
     struct EmptyBody {}
@@ -20,7 +21,7 @@ async fn should_return_400_if_invalid_input() {
     // Call the log-in route with invalid credentials and assert that a
     // 400 HTTP status code is returned along with the appropriate error message.
 
-    let app = TestApp::new().await;
+    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
 
     let invalid_creds = serde_json::json!({
         "email": "fooexample.com".to_string(),
@@ -37,7 +38,7 @@ async fn should_return_401_if_incorrect_credentials() {
     // Call the log-in route with incorrect credentials and assert
     // that a 401 HTTP status code is returned along with the appropriate error message.
 
-    let app = TestApp::new().await;
+    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
 
     let user = serde_json::json!({
         "email": "foo@example.com",
@@ -60,7 +61,7 @@ async fn should_return_401_if_incorrect_credentials() {
 
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
+    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
 
     let random_email = get_random_email();
 

@@ -1,19 +1,17 @@
 use reqwest::cookie::Jar;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-//use auth_service::app_state::{AppState, UserStoreType};
-//use auth_service::services::hashmap_user_store::HashmapUserStore;
-//use auth_service::Application;
 use auth_service::{
-    app_state::{AppState, UserStoreType},
+    app_state::{AppState, BannedtokenStoreType, UserStoreType},
     services::hashmap_user_store::HashmapUserStore,
+    services::hashset_banned_token_store::HashsetBannedTokenStore,
     utils::constants::test,
     Application,
 };
 
+#[derive(Debug)]
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
@@ -21,9 +19,11 @@ pub struct TestApp {
 }
 
 impl TestApp {
-    pub async fn new() -> Self {
+    pub async fn new(injected_banned_token_store: HashsetBannedTokenStore) -> Self {
         let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
-        let app_state = AppState::new(user_store);
+        let banned_token_store: BannedtokenStoreType =
+            Arc::new(RwLock::new(injected_banned_token_store.clone()));
+        let app_state = AppState::new(user_store, banned_token_store);
 
         let app = Application::build(app_state, test::APP_ADDRESS)
             .await
@@ -47,8 +47,13 @@ impl TestApp {
             address,
             cookie_jar,
             http_client,
+            //            app_state,
         }
     }
+
+    //    pub async fn get_banned_token_store(&self) -> BannedtokenStoreType {
+    //        let banned_token_store = &self.app_state.banned_token_store.read().await;
+    //    }
 
     pub async fn get_root(&self) -> reqwest::Response {
         self.http_client
@@ -83,27 +88,6 @@ impl TestApp {
             .await
             .expect("Failed to execute request.")
     }
-
-    //X    pub async fn login(&self) -> reqwest::Response {
-    //X        #[derive(Debug, Serialize, Deserialize)]
-    //X        struct Person {
-    //X            first_name: String,
-    //X            last_name: String,
-    //X        }
-    //X
-    //X        let p = Person {
-    //X            first_name: "Foo".into(),
-    //X            last_name: "Bar".into(),
-    //X        };
-    //X
-    //X        self.http_client
-    //X            .post(&format!("{}/login", &self.address))
-    //X            //    .header("Content-Type", "application/json")
-    //X            //    .json(&p)
-    //X            .send()
-    //X            .await
-    //X            .expect("Failed to execute request.")
-    //X    }
 
     pub async fn logout(&self) -> reqwest::Response {
         self.http_client
