@@ -22,14 +22,14 @@ mod tests {
     use super::Password;
 
     #[test]
-    fn is_should_return_the_password_when_len_gte_8() {
+    fn it_should_return_the_password_when_len_gte_8() {
         let expected = Ok(Password(String::from("12345678")));
         let actual = Password::parse(String::from("12345678"));
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn is_should_return_an_error_when_password_is_less_than_8_chars() {
+    fn it_should_return_an_error_when_password_is_less_than_8_chars() {
         let actual = Password::parse(String::from("1234567")).is_err();
         assert_eq!(actual, true);
     }

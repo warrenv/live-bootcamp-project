@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+//use crate::helpers::{get_random_email, TestApp};
 use crate::helpers::{get_random_email, TestApp};
 use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
-use auth_service::utils::constants::JWT_COOKIE_NAME;
+use auth_service::{
+    domain::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME,
+};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
@@ -104,16 +107,29 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         "requires2FA": true
     });
 
-    let response = app.post_signup(&signup_body).await;
-
-    assert_eq!(response.status().as_u16(), 201);
-
     let login_body = serde_json::json!({
         "email": random_email,
         "password": "password123",
     });
 
-    let response = app.post_login(&login_body).await;
+    let response = app.post_signup(&signup_body).await;
+    assert_eq!(response.status().as_u16(), 201);
 
+    let response = app.post_login(&login_body).await;
     assert_eq!(response.status().as_u16(), 206);
+
+    let json_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+
+    assert_eq!(json_body.message, "2FA required".to_owned());
+
+    let two_fa_code_store = &app.two_fa_code_store.read().await;
+    let result = two_fa_code_store
+        .get_code(&Email::parse(random_email).unwrap())
+        .await;
+
+    assert_eq!(result.is_ok(), true);
+    assert_eq!(json_body.login_attempt_id.is_empty(), false);
 }

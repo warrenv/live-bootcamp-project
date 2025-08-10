@@ -4,18 +4,21 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use auth_service::{
-    app_state::{AppState, BannedtokenStoreType, UserStoreType},
-    services::hashmap_user_store::HashmapUserStore,
-    services::hashset_banned_token_store::HashsetBannedTokenStore,
+    app_state::{AppState, BannedtokenStoreType, TwoFACodeStoreType, UserStoreType},
+    services::{
+        hashmap_two_fa_code_store::HashmapTwoFACodeStore, hashmap_user_store::HashmapUserStore,
+        hashset_banned_token_store::HashsetBannedTokenStore,
+    },
     utils::constants::test,
     Application,
 };
 
-#[derive(Debug)]
+//#[derive(Debug)]
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
+    pub two_fa_code_store: TwoFACodeStoreType,
 }
 
 impl TestApp {
@@ -23,7 +26,8 @@ impl TestApp {
         let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
         let banned_token_store: BannedtokenStoreType =
             Arc::new(RwLock::new(injected_banned_token_store.clone()));
-        let app_state = AppState::new(user_store, banned_token_store);
+        let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+        let app_state = AppState::new(user_store, banned_token_store, two_fa_code_store.clone());
 
         let app = Application::build(app_state, test::APP_ADDRESS)
             .await
@@ -47,13 +51,9 @@ impl TestApp {
             address,
             cookie_jar,
             http_client,
-            //            app_state,
+            two_fa_code_store,
         }
     }
-
-    //    pub async fn get_banned_token_store(&self) -> BannedtokenStoreType {
-    //        let banned_token_store = &self.app_state.banned_token_store.read().await;
-    //    }
 
     pub async fn get_root(&self) -> reqwest::Response {
         self.http_client
