@@ -1,11 +1,12 @@
 use crate::helpers::{get_random_email, TestApp};
 use auth_service::routes::SignupResponse;
 use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
+use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::ErrorResponse;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
 
     let random_email = get_random_email(); // Call helper method to generate email
 
@@ -28,7 +29,7 @@ async fn should_return_422_if_malformed_input() {
 
 #[tokio::test]
 async fn should_return_201_if_valid_input() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
 
     let expected_response = SignupResponse {
         message: "User created successfully!".to_owned(),
@@ -55,7 +56,7 @@ async fn should_return_201_if_valid_input() {
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
 
     let input = [
         serde_json::json!({
@@ -92,7 +93,7 @@ async fn should_return_400_if_invalid_input() {
 
 #[tokio::test]
 async fn should_return_409_if_email_already_exists() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
 
     let user = serde_json::json!({
         "email": "foo@example.com",

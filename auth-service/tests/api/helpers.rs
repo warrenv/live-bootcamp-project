@@ -4,10 +4,12 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use auth_service::{
-    app_state::{AppState, BannedtokenStoreType, TwoFACodeStoreType, UserStoreType},
+    app_state::{
+        AppState, BannedtokenStoreType, EmailClientType, TwoFACodeStoreType, UserStoreType,
+    },
     services::{
         hashmap_two_fa_code_store::HashmapTwoFACodeStore, hashmap_user_store::HashmapUserStore,
-        hashset_banned_token_store::HashsetBannedTokenStore,
+        hashset_banned_token_store::HashsetBannedTokenStore, mock_email_client::MockEmailClient,
     },
     utils::constants::test,
     Application,
@@ -19,15 +21,26 @@ pub struct TestApp {
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
     pub two_fa_code_store: TwoFACodeStoreType,
+    pub email_client: EmailClientType,
 }
 
 impl TestApp {
-    pub async fn new(injected_banned_token_store: HashsetBannedTokenStore) -> Self {
+    pub async fn new(
+        injected_banned_token_store: HashsetBannedTokenStore,
+        email_client: MockEmailClient,
+    ) -> Self {
         let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
         let banned_token_store: BannedtokenStoreType =
             Arc::new(RwLock::new(injected_banned_token_store.clone()));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
-        let app_state = AppState::new(user_store, banned_token_store, two_fa_code_store.clone());
+        let email_client: EmailClientType = Arc::new(RwLock::new(email_client));
+
+        let app_state = AppState::new(
+            user_store,
+            banned_token_store,
+            two_fa_code_store.clone(),
+            email_client.clone(),
+        );
 
         let app = Application::build(app_state, test::APP_ADDRESS)
             .await
@@ -52,6 +65,7 @@ impl TestApp {
             cookie_jar,
             http_client,
             two_fa_code_store,
+            email_client,
         }
     }
 

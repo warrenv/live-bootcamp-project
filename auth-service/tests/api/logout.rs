@@ -5,11 +5,12 @@ use crate::helpers::{get_random_email, TestApp};
 use auth_service::domain::BannedTokenStore;
 use auth_service::domain::Email;
 use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
+use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::utils::auth::generate_auth_cookie;
 
 #[tokio::test]
 async fn should_return_200_if_valid_jwt_cookie() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
     let email = Email::parse("foo@example.com".to_string()).unwrap();
     let cookie = generate_auth_cookie(&email).unwrap();
 
@@ -32,7 +33,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
 #[tokio::test]
 async fn should_return_400_if_logout_called_twice_in_a_row() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
     let email = Email::parse("foo@example.com".to_string()).unwrap();
 
     app.cookie_jar.add_cookie_str(
@@ -48,14 +49,14 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
 
 #[tokio::test]
 async fn should_return_400_if_jwt_cookie_missing() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
     let response = app.logout().await;
     assert_eq!(response.status().as_u16(), 400);
 }
 
 #[tokio::test]
 async fn should_return_401_if_invalid_token() {
-    let app = TestApp::new(HashsetBannedTokenStore::default()).await;
+    let app = TestApp::new(HashsetBannedTokenStore::default(), MockEmailClient {}).await;
 
     // add invalid cookie - it's not a jwt.
     app.cookie_jar.add_cookie_str(
