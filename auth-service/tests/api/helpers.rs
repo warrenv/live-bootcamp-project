@@ -33,7 +33,7 @@ impl TestApp {
         let banned_token_store: BannedtokenStoreType =
             Arc::new(RwLock::new(injected_banned_token_store.clone()));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
-        let email_client: EmailClientType = Arc::new(RwLock::new(email_client));
+        let email_client: EmailClientType = Arc::new(email_client);
 
         let app_state = AppState::new(
             user_store,

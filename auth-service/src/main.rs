@@ -20,7 +20,7 @@ async fn main() {
         Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
     let two_fa_code_store: TwoFACodeStoreType =
         Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
-    let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient {}));
+    let email_client: EmailClientType = Arc::new(MockEmailClient {});
 
     let app_state = AppState::new(
         user_store,

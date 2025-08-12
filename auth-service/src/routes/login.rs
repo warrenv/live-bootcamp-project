@@ -104,7 +104,7 @@ async fn handle_2fa(
         return (jar, Err(AuthAPIError::UnexpectedError));
     };
 
-    let email_client = state.email_client.read().await;
+    let email_client = state.email_client.clone();
     if email_client
         .send_email(
             &Email::parse("baz@example.com".to_string()).unwrap(),
